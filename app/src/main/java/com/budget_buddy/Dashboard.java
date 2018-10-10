@@ -2,6 +2,7 @@ package com.budget_buddy;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -18,5 +19,6 @@ public class Dashboard extends AppCompatActivity {
 
         TextView userNameTextView = findViewById(R.id.userName);
         userNameTextView.setText("User: " + currentUser.GetUserName());
+
     }
 }
