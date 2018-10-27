@@ -1,4 +1,4 @@
-package com.budget_buddy.utils;
+package com.budget_buddy.utils.Data;
 
 import android.support.test.runner.AndroidJUnit4;
 
@@ -21,31 +21,31 @@ public class TableWriterTest {
     @Test
     public void testWrite() throws InvalidDataLabelException {
         tableWriter = new TableWriter();
-        DummyUser user = new DummyUser("testUName", 235.21);
-        tableWriter.WriteData(DataConfig.DataLabels.USERS, user, true);
+        DummyUser user = new DummyUser("testUName", 235);
+        tableWriter.WriteData(DataConfig.DataLabels.TEST, user, DataConfig.DataLabels.TEST_USER);
     }
 
     @Test
     public void testWriteNested() throws InvalidDataLabelException {
         tableWriter = new TableWriter();
         List<String> labels = new ArrayList<String>() {{
+            add(DataConfig.DataLabels.TEST);
             add(DataConfig.DataLabels.USERS);
-            add(DataConfig.DataLabels.TEST_NESTED);
         }};
         DummyUser user = new DummyUser("testUName", 235.21);
-        tableWriter.WriteData(labels, user, true);
+        tableWriter.WriteData(labels, user, DataConfig.DataLabels.TEST_USER);
     }
 
     @Test(expected = InvalidDataLabelException.class)
     public void testInvalidLabel() throws InvalidDataLabelException {
         tableWriter = new TableWriter();
         List<String> labels = new ArrayList<String>() {{
+            add(DataConfig.DataLabels.TEST);
             add(DataConfig.DataLabels.USERS);
-            add(DataConfig.DataLabels.TEST_NESTED);
             add("InvalidLabel");
         }};
         DummyUser user = new DummyUser("testUName", 235.21);
-        tableWriter.WriteData(labels, user, true);
+        tableWriter.WriteData(labels, user, DataConfig.DataLabels.TEST_USER);
     }
 
     @AfterClass

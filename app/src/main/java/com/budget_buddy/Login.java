@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.content.Intent;
 import android.util.Log;
 import android.view.View;
+import android.widget.ProgressBar;
+
+import com.budget_buddy.exception.InvalidDataLabelException;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -22,11 +25,14 @@ public class Login extends AppCompatActivity {
 
     private GoogleSignInClient mGoogleSignInClient;
     private BBUser currentUser = BBUser.GetInstance();
+    private ProgressBar wheel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        wheel = findViewById(R.id.loginProgressWheel);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.web_client_id))  // may need to add the server's client ID here, or get the value dynamically.
@@ -34,6 +40,8 @@ public class Login extends AppCompatActivity {
                 .build();
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        onLaunchSignIn();
     }
 
     @Override
@@ -41,7 +49,7 @@ public class Login extends AppCompatActivity {
         super.onStart();
         // TODO: Check if user is signed in (non-null) and update UI accordingly. I.E. if they are no longer signed in, display the sign in page.
         if(currentUser.GetUser() != null) {
-            gotoDashboard(currentUser);
+            //gotoDashboard(currentUser);
         }
         else {
             // TODO: If they are no longer signed in, go to the sign in page
@@ -55,6 +63,7 @@ public class Login extends AppCompatActivity {
 
     public void signOut(View view) {
         currentUser.SignOut();
+        mGoogleSignInClient.signOut();
     }
 
     @Override
@@ -78,33 +87,67 @@ public class Login extends AppCompatActivity {
 
     private void firebaseAuthWithGoogle(GoogleSignInAccount account) {
         Log.d("Sign in message:", "firebaseAuthWithGoogle: " + account.getId());
-
         Task task = currentUser.SignIn(account);
-
+        startProgressWheel();
         task.addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()) {
                     // Sign in success, update UI with the signed-in user's information
                     Log.d("Sign in message:", "signInWithCredential:success");
-                    currentUser.Initialize();
-
+                    try {
+                        currentUser.Initialize();
+                    }
+                    catch (InvalidDataLabelException idle) {
+                        // TODO: IMPORTANT: Handle this exception
+                    }
                     gotoDashboard(currentUser);
-
                 } else {
                     // TODO: If sign in fails, display a message to the user.
                     Log.w("Sign in message:", "signInWithCredential:failure", task.getException());
                     // updateUI(null);
+                    closeProgressWheel();
                 }
-            }});
+            }
+        });
     }
-
 
     private void gotoDashboard(BBUser user) {
         if (user.GetUser() != null) {
             Intent dashboardIntent = new Intent(this, Dashboard.class);
-
+            closeProgressWheel();
             startActivity(dashboardIntent);
         }
+    }
+
+    private void onLaunchSignIn() {
+        Task<GoogleSignInAccount> task = mGoogleSignInClient.silentSignIn();
+        startProgressWheel();
+        if(task.isSuccessful()) {
+            GoogleSignInAccount account = task.getResult();
+            firebaseAuthWithGoogle(account);
+        } else {
+
+            task.addOnCompleteListener(this, new OnCompleteListener<GoogleSignInAccount>() {
+                @Override
+                public void onComplete(@NonNull Task<GoogleSignInAccount> task) {
+                    try {
+                        GoogleSignInAccount account = task.getResult(ApiException.class);
+                        firebaseAuthWithGoogle(account);
+                    } catch(ApiException apiException) {
+                        // TODO: handle exception
+                        closeProgressWheel();
+                    }
+                }
+            });
+        }
+    }
+
+    private void startProgressWheel() {
+        wheel.setVisibility(View.VISIBLE);
+    }
+
+    private void closeProgressWheel() {
+        wheel.setVisibility(View.GONE);
     }
 }
